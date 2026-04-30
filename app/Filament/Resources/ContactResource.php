@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\Contacts\Pages;
 use App\Models\Contact;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -145,6 +146,9 @@ class ContactResource extends Resource
                 //
             ])
             ->recordActions([
+                Action::make('createDeal')
+                    ->label('Create Deal')
+                    ->url(fn (Contact $record): string => DealResource::getUrl('create', ['contact_id' => $record->id])),
                 EditAction::make(),
                 DeleteAction::make(),
             ])

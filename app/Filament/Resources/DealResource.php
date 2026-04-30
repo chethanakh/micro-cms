@@ -1,0 +1,225 @@
+<?php
+
+namespace App\Filament\Resources;
+
+use App\Filament\Resources\Deals\Pages;
+use App\Models\Deal;
+use App\Models\Stock;
+use BackedEnum;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+
+class DealResource extends Resource
+{
+    protected static ?string $model = Deal::class;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::ShoppingCart;
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema
+            ->components([Section::make('Deal')
+                ->schema([
+                    Select::make('contact_id')
+                        ->label('Contact')
+                        ->relationship('contact', 'first_name')
+                        ->getOptionLabelFromRecordUsing(fn ($record): string => trim("{$record->first_name} {$record->last_name}"))
+                        ->searchable(['first_name', 'last_name', 'email', 'phone_number', 'mobile_number'])
+                        ->preload()
+                        ->default(fn (): ?int => request()->integer('contact_id') ?: null)
+                        ->required(),
+                ]),
+                Section::make('Action List')
+                    ->schema([
+                        Select::make('stage')
+                            ->label('Deal Stage')
+                            ->options([
+                                'pending' => 'Pending',
+                                'preparing' => 'Preparing',
+                                'handed_over_to_delivery' => 'Hand Overed to the Delivey',
+                                'delivered' => 'Delivered',
+                                'ask_for_reviewsa' => 'Ask For reviewsa',
+                                'closed' => 'Colsed',
+                            ])
+                            ->default('pending')
+                            ->required(),
+                        Placeholder::make('invoice_status')
+                            ->label('Invoice')
+                            ->content(fn (?Deal $record): string => $record?->invoice_number
+                                ? "Invoice generated: {$record->invoice_number}"
+                                : 'No invoice generated yet.'),
+                    ]),
+
+                Section::make('Line Items')
+                    ->schema([
+                        Repeater::make('lineItems')
+                            ->relationship()
+                            ->defaultItems(1)
+                            ->schema([
+                                Select::make('product_id')
+                                    ->label('Product')
+                                    ->relationship('product', 'name')
+                                    ->searchable()
+                                    ->preload()
+                                    ->live()
+                                    ->required()
+                                    ->afterStateUpdated(function (Set $set, ?int $state): void {
+                                        if (! $state) {
+                                            $set('stock_id', null);
+                                            $set('unit_price', null);
+
+                                            return;
+                                        }
+
+                                        $stocks = Stock::query()
+                                            ->where('product_id', $state)
+                                            ->whereRaw('(quantity - sold_quantity) > 0')
+                                            ->orderBy('id')
+                                            ->get(['id', 'retail_price']);
+
+                                        if ($stocks->count() !== 1) {
+                                            $set('stock_id', null);
+
+                                            return;
+                                        }
+
+                                        $stock = $stocks->first();
+
+                                        $set('stock_id', $stock?->id);
+                                        $set('unit_price', $stock?->retail_price);
+                                    }),
+                                Select::make('stock_id')
+                                    ->label('Stock')
+                                    ->options(function (Get $get): array {
+                                        $productId = $get('product_id');
+
+                                        if (! $productId) {
+                                            return [];
+                                        }
+
+                                        return Stock::query()
+                                            ->where('product_id', $productId)
+                                            ->whereRaw('(quantity - sold_quantity) > 0')
+                                            ->orderBy('id')
+                                            ->get(['id', 'quantity', 'sold_quantity', 'retail_price'])
+                                            ->mapWithKeys(function (Stock $stock): array {
+                                                $available = max(0, $stock->quantity - $stock->sold_quantity);
+
+                                                return [
+                                                    $stock->id => "Stock #{$stock->id} (Available: {$available})",
+                                                ];
+                                            })
+                                            ->all();
+                                    })
+                                    ->live()
+                                    ->required()
+                                    ->afterStateUpdated(function (Set $set, ?int $state): void {
+                                        if (! $state) {
+                                            return;
+                                        }
+
+                                        $stock = Stock::query()->find($state);
+
+                                        if (! $stock) {
+                                            return;
+                                        }
+
+                                        $set('unit_price', $stock->retail_price);
+                                    }),
+                                TextInput::make('quantity')
+                                    ->required()
+                                    ->default(1)
+                                    ->numeric()
+                                    ->minValue(1),
+                                TextInput::make('unit_price')
+                                    ->label('Price')
+                                    ->required()
+                                    ->numeric()
+                                    ->minValue(0),
+                            ])
+                            ->columns(4)
+                            ->minItems(1)
+                            ->required(),
+                    ])
+                    ->columnSpan(2), ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('id')
+                    ->sortable(),
+                TextColumn::make('contact.first_name')
+                    ->label('Contact First Name')
+                    ->searchable(),
+                TextColumn::make('contact.last_name')
+                    ->label('Contact Last Name')
+                    ->searchable(),
+                TextColumn::make('line_items_count')
+                    ->label('Items')
+                    ->counts('lineItems')
+                    ->sortable(),
+                TextColumn::make('stage')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'pending' => 'Pending',
+                        'preparing' => 'Preparing',
+                        'handed_over_to_delivery' => 'Hand Overed to the Delivey',
+                        'delivered' => 'Delivered',
+                        'ask_for_reviewsa' => 'Ask For reviewsa',
+                        'closed' => 'Colsed',
+                        'new' => 'Pending',
+                        default => (string) $state,
+                    })
+                    ->sortable(),
+                TextColumn::make('invoice_number')
+                    ->label('Invoice')
+                    ->placeholder('Not generated')
+                    ->toggleable(),
+                TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable(),
+            ])
+            ->filters([
+                //
+            ])
+            ->recordActions([
+                EditAction::make(),
+                DeleteAction::make(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListDeals::route('/'),
+            'create' => Pages\CreateDeal::route('/create'),
+            'edit' => Pages\EditDeal::route('/{record}/edit'),
+        ];
+    }
+}

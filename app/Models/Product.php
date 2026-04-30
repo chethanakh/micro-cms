@@ -16,4 +16,12 @@ class Product extends Model
     {
         return $this->hasMany(Stock::class);
     }
+
+    /**
+     * @return HasMany<DealLineItem, $this>
+     */
+    public function dealLineItems(): HasMany
+    {
+        return $this->hasMany(DealLineItem::class);
+    }
 }
