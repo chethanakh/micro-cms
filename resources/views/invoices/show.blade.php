@@ -6,6 +6,14 @@
     <title>Invoice {{ $invoice->invoice_number }}</title>
     @php
         $contact = $invoice->deal?->contact;
+        $company = \App\Models\CompanyInformation::current();
+        $companyName = $company->company_name ?: config('app.name');
+        $companyPhones = collect([$company->phone_number, $company->mobile_number])
+            ->filter(fn ($value) => filled($value))
+            ->implode(' • ');
+        $companyLogoUrl = $company->logo_path
+            ? \Illuminate\Support\Facades\Storage::disk('public')->url($company->logo_path)
+            : asset('images/temp-invoice-logo.svg');
         $fullName = trim(($contact?->first_name ?? '') . ' ' . ($contact?->last_name ?? ''));
         $statusKey = $invoice->status ?? 'quote';
         $statusLabel = \App\Models\Invoice::STATUS_OPTIONS[$statusKey] ?? ucfirst((string) $statusKey);
@@ -86,9 +94,18 @@
 
         .logo-wrap img {
             width: 124px;
+            height: 124px;
             max-width: 100%;
-            height: auto;
             display: inline-block;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .company-details {
+            margin-top: 10px;
+            font-size: 0.68rem;
+            line-height: 1.5;
+            color: var(--muted);
         }
 
         .summary-grid {
@@ -341,7 +358,7 @@
                 <h1 class="invoice-title">INVOICE</h1>
             </div>
             <div class="logo-wrap">
-                <img src="{{ asset('images/temp-invoice-logo.svg') }}" alt="Temporary company logo">
+                <img src="{{ $companyLogoUrl }}" alt="{{ $companyName }} logo">
             </div>
         </section>
 
@@ -423,9 +440,18 @@
             </div>
         </section>
 
+        <section>
+            <div class="payment-copy">
+                <div>{{ $companyName }}</div>
+                @if ($companyPhones)
+                    <div>{{ $companyPhones }}</div>
+                @endif
+                <div>Reference No: {{ $invoice->invoice_number }}</div>
+            </div>
+        </section>
 
         <div class="footer-note">
-            Generated {{ now()->format('d.m.Y') }} • Thank you for trusting us.
+            Generated {{ now()->format('d.m.Y') }} • Thank you for trusting {{ $companyName }}.
         </div>
     </div>
 
