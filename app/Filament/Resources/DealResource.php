@@ -26,6 +26,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 class DealResource extends Resource
@@ -248,7 +249,14 @@ class DealResource extends Resource
                     ->sortable(),
             ])
             ->filters([
-                //
+                SelectFilter::make('stage')
+                    ->options(
+                        collect(DealStage::cases())
+                            ->mapWithKeys(fn (DealStage $s): array => [$s->value => ucwords(str_replace('_', ' ', $s->value))])
+                            ->all()
+                    )
+                    ->multiple()
+                    ->preload(),
             ])
             ->recordActions([
                 EditAction::make(),
