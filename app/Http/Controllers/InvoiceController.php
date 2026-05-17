@@ -17,7 +17,9 @@ class InvoiceController extends Controller
             fn ($item) => ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0)
         );
 
-        return view('invoices.show', compact('invoice', 'lineItems', 'grandTotal'));
+        $deliveryCharges = $invoice->delivery_charges ?? 0;
+
+        return view('invoices.show', compact('invoice', 'lineItems', 'grandTotal', 'deliveryCharges'));
     }
 
     public function parcelLabel(Invoice $invoice): View
@@ -30,6 +32,9 @@ class InvoiceController extends Controller
             fn ($item) => ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0)
         );
 
-        return view('invoices.parcel-label', compact('invoice', 'grandTotal'));
+        $deliveryCharges = $invoice->delivery_charges ?? 0;
+        $totalWithDelivery = $grandTotal + $deliveryCharges;
+
+        return view('invoices.parcel-label', compact('invoice', 'grandTotal', 'deliveryCharges', 'totalWithDelivery'));
     }
 }

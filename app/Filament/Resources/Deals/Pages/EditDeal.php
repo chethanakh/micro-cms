@@ -30,11 +30,14 @@ class EditDeal extends EditRecord
                         'unit_price' => (float) $item->unit_price,
                     ])->values()->all();
 
+                    $deliveryCharges = $deal->delivery_charges_available ? ($deal->delivery_charges ?? 0) : 0;
+
                     $invoice = Invoice::create([
                         'deal_id' => $deal->id,
                         'invoice_number' => 'INV-'.str_pad((string) $deal->id, 5, '0', STR_PAD_LEFT).'-'.now()->format('YmdHis'),
                         'status' => 'quote',
                         'line_items' => $lineItems,
+                        'delivery_charges' => $deliveryCharges,
                     ]);
 
                     Notification::make()

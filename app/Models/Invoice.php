@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'invoice_number',
     'status',
     'line_items',
+    'delivery_charges',
 ])]
 class Invoice extends Model
 {
@@ -26,6 +27,7 @@ class Invoice extends Model
     {
         return [
             'line_items' => 'array',
+            'delivery_charges' => 'decimal:2',
         ];
     }
 

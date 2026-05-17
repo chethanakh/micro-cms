@@ -181,7 +181,7 @@
         </section>
 
         <div class="total-wrap">
-            <div class="total">Total - Rs.{{ number_format($grandTotal, 2) }}</div>
+            <div class="total">Total - Rs.{{ number_format($totalWithDelivery, 2) }}</div>
         </div>
     </div>
 

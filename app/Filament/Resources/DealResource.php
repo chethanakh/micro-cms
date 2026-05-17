@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Enums\DealStage;
 use App\Filament\Resources\Deals\Pages;
 use App\Filament\Resources\Deals\RelationManagers\InvoicesRelationManager;
+use App\Models\CompanyInformation;
 use App\Models\Deal;
 use App\Models\Stock;
 use BackedEnum;
@@ -12,6 +13,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -162,7 +164,36 @@ class DealResource extends Resource
                             ->minItems(1)
                             ->required(),
                     ])
-                    ->columnSpan(2), ]);
+                    ->columnSpan(2),
+
+                Section::make('Delivery')
+                    ->schema([
+                        Checkbox::make('delivery_charges_available')
+                            ->label('Delivery charges available')
+                            ->live()
+                            ->afterStateUpdated(function (Set $set, ?bool $state): void {
+                                if ($state) {
+                                    $defaultCharges = CompanyInformation::current()->default_delivery_charges ?? 0;
+                                    $set('delivery_charges', $defaultCharges);
+                                } else {
+                                    $set('delivery_charges', null);
+                                    $set('tracking_id', null);
+                                }
+                            }),
+                        TextInput::make('delivery_charges')
+                            ->label('Delivery charges')
+                            ->numeric()
+                            ->minValue(0)
+                            ->step('0.01')
+                            ->prefix('Rs.')
+                            ->visible(fn (Get $get) => (bool) $get('delivery_charges_available')),
+                        TextInput::make('tracking_id')
+                            ->label('Tracking ID')
+                            ->maxLength(255)
+                            ->visible(fn (Get $get) => (bool) $get('delivery_charges_available')),
+                    ])
+                    ->columns(2),
+            ]);
     }
 
     public static function table(Table $table): Table

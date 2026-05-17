@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['contact_id', 'stage', 'invoice_number', 'invoice_generated_at'])]
+#[Fillable(['contact_id', 'stage', 'invoice_number', 'invoice_generated_at', 'delivery_charges_available', 'delivery_charges', 'tracking_id'])]
 class Deal extends Model
 {
     /**

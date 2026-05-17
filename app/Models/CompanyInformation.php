@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
     'address_line_2',
     'city',
     'postal_code',
+    'default_delivery_charges',
     'logo_path',
 ])]
 class CompanyInformation extends Model
@@ -23,7 +24,10 @@ class CompanyInformation extends Model
     {
         return static::query()->firstOrCreate(
             ['id' => 1],
-            ['company_name' => config('app.name')],
+            [
+                'company_name' => config('app.name'),
+                'default_delivery_charges' => 0,
+            ],
         );
     }
 }

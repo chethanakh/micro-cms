@@ -28,7 +28,8 @@
         ])->filter(fn ($value) => filled($value));
         $taxRate = 0;
         $taxAmount = $grandTotal * $taxRate;
-        $totalDue = $grandTotal + $taxAmount;
+        $deliveryCharges = $invoice->delivery_charges ?? 0;
+        $totalDue = $grandTotal + $taxAmount + $deliveryCharges;
     @endphp
 
     <style>
@@ -404,6 +405,12 @@
                 <span class="label">Tax</span>
                 <span class="value">{{ $taxRate * 100 }}%</span>
             </div>
+            @if ($deliveryCharges > 0)
+                <div class="totals-row">
+                    <span class="label">Delivery</span>
+                    <span class="value">{{ number_format($deliveryCharges, 2) }}</span>
+                </div>
+            @endif
             <div class="totals-row total">
                 <span class="label">Total</span>
                 <span class="value">{{ number_format($totalDue, 2) }}</span>

@@ -83,6 +83,16 @@ class CompanyInformation extends Page
                             ->maxLength(50),
                     ])
                     ->columns(2),
+                Section::make('System Settings')
+                    ->schema([
+                        TextInput::make('default_delivery_charges')
+                            ->label('Defult Delivery charges')
+                            ->numeric()
+                            ->minValue(0)
+                            ->step('0.01')
+                            ->prefix('Rs.'),
+                    ])
+                    ->columns(2),
             ])
             ->statePath('data')
             ->model($this->record);
