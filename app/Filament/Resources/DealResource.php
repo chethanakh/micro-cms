@@ -29,6 +29,8 @@ class DealResource extends Resource
 {
     protected static ?string $model = Deal::class;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'CRM';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::ShoppingCart;
 
     public static function form(Schema $schema): Schema
