@@ -19,4 +19,17 @@ class InvoiceController extends Controller
 
         return view('invoices.show', compact('invoice', 'lineItems', 'grandTotal'));
     }
+
+    public function parcelLabel(Invoice $invoice): View
+    {
+        $invoice->load('deal.contact');
+
+        $lineItems = collect($invoice->line_items ?? []);
+
+        $grandTotal = $lineItems->sum(
+            fn ($item) => ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0)
+        );
+
+        return view('invoices.parcel-label', compact('invoice', 'grandTotal'));
+    }
 }

@@ -9,6 +9,10 @@ use Illuminate\Database\Eloquent\Model;
     'company_name',
     'phone_number',
     'mobile_number',
+    'address_line_1',
+    'address_line_2',
+    'city',
+    'postal_code',
     'logo_path',
 ])]
 class CompanyInformation extends Model

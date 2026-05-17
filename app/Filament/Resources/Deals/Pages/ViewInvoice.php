@@ -43,6 +43,13 @@ class ViewInvoice extends Page
                 ->color('primary')
                 ->url(fn (): string => route('invoices.show', $this->invoice).'?print=1')
                 ->openUrlInNewTab(),
+
+            Action::make('parcelLabel')
+                ->label('Parcel Label')
+                ->icon('heroicon-o-document-text')
+                ->color('gray')
+                ->url(fn (): string => route('invoices.parcel-label', $this->invoice).'?print=1')
+                ->openUrlInNewTab(),
         ];
     }
 }

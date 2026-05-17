@@ -70,6 +70,17 @@ class CompanyInformation extends Page
                             ->label('Mobile Number')
                             ->tel()
                             ->maxLength(50),
+                        TextInput::make('address_line_1')
+                            ->label('Address Line 1')
+                            ->maxLength(255),
+                        TextInput::make('address_line_2')
+                            ->label('Address Line 2')
+                            ->maxLength(255),
+                        TextInput::make('city')
+                            ->maxLength(255),
+                        TextInput::make('postal_code')
+                            ->label('Postal Code')
+                            ->maxLength(50),
                     ])
                     ->columns(2),
             ])
