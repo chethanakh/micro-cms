@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DealStage;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,6 +26,14 @@ class Deal extends Model
         static::deleted(function (): void {
             Stock::syncSoldQuantities();
         });
+
+        static::updated(function (self $deal): void {
+            if (! $deal->wasChanged('stage')) {
+                return;
+            }
+
+            $deal->syncLatestInvoiceStatus();
+        });
     }
 
     public function contact(): BelongsTo
@@ -38,5 +47,31 @@ class Deal extends Model
     public function lineItems(): HasMany
     {
         return $this->hasMany(DealLineItem::class);
+    }
+
+    /**
+     * @return HasMany<Invoice, $this>
+     */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    protected function syncLatestInvoiceStatus(): void
+    {
+        $latestInvoice = $this->invoices()->latest('id')->first();
+
+        if (! $latestInvoice) {
+            return;
+        }
+
+        $latestInvoice->update([
+            'status' => $this->invoiceStatusForStage($this->stage),
+        ]);
+    }
+
+    protected function invoiceStatusForStage(?string $stage): string
+    {
+        return DealStage::tryFrom($stage)?->invoiceStatus() ?? DealStage::Pending->invoiceStatus();
     }
 }

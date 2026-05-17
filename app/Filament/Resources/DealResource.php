@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\DealStage;
 use App\Filament\Resources\Deals\Pages;
+use App\Filament\Resources\Deals\RelationManagers\InvoicesRelationManager;
 use App\Models\Deal;
 use App\Models\Stock;
 use BackedEnum;
@@ -47,15 +49,18 @@ class DealResource extends Resource
                     ->schema([
                         Select::make('stage')
                             ->label('Deal Stage')
-                            ->options([
-                                'pending' => 'Pending',
-                                'preparing' => 'Preparing',
-                                'handed_over_to_delivery' => 'Hand Overed to the Delivey',
-                                'delivered' => 'Delivered',
-                                'ask_for_reviewsa' => 'Ask For reviewsa',
-                                'closed' => 'Colsed',
-                            ])
+                            ->live()
+                            ->options(DealStage::options())
                             ->default('pending')
+                            ->afterStateUpdated(function (?string $state, ?Deal $record): void {
+                                if (! $record || $state === null || $record->stage === $state) {
+                                    return;
+                                }
+
+                                $record->update([
+                                    'stage' => $state,
+                                ]);
+                            })
                             ->required(),
                         Placeholder::make('invoice_status')
                             ->label('Invoice')
@@ -176,13 +181,7 @@ class DealResource extends Resource
                     ->sortable(),
                 TextColumn::make('stage')
                     ->badge()
-                    ->formatStateUsing(fn (?string $state): string => match ($state) {
-                        'pending' => 'Pending',
-                        'preparing' => 'Preparing',
-                        'handed_over_to_delivery' => 'Hand Overed to the Delivey',
-                        'delivered' => 'Delivered',
-                        'ask_for_reviewsa' => 'Ask For reviewsa',
-                        'closed' => 'Colsed',
+                    ->formatStateUsing(fn (?string $state): string => DealStage::tryFrom($state ?? '')?->label() ?? match ($state) {
                         'new' => 'Pending',
                         default => (string) $state,
                     })
@@ -211,7 +210,9 @@ class DealResource extends Resource
 
     public static function getRelations(): array
     {
-        return [];
+        return [
+            InvoicesRelationManager::class,
+        ];
     }
 
     public static function getPages(): array
@@ -220,6 +221,7 @@ class DealResource extends Resource
             'index' => Pages\ListDeals::route('/'),
             'create' => Pages\CreateDeal::route('/create'),
             'edit' => Pages\EditDeal::route('/{record}/edit'),
+            'view-invoice' => Pages\ViewInvoice::route('/{record}/invoices/{invoice}'),
         ];
     }
 }
