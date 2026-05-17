@@ -8,9 +8,10 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
-#[Fillable(['contact_id', 'stage', 'invoice_number', 'invoice_generated_at', 'delivery_charges_available', 'delivery_charges', 'delivery_service_provider', 'tracking_id', 'tracking_slug'])]
+#[Fillable(['contact_id', 'stage', 'delivery_charges_available', 'delivery_charges', 'delivery_service_provider', 'tracking_id', 'tracking_slug'])]
 class Deal extends Model
 {
     /**
@@ -97,6 +98,11 @@ class Deal extends Model
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
+    }
+
+    public function latestInvoice(): HasOne
+    {
+        return $this->hasOne(Invoice::class)->latestOfMany('id');
     }
 
     protected function syncLatestInvoiceStatus(): void

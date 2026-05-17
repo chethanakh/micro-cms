@@ -69,8 +69,8 @@ class DealResource extends Resource
                             ->required(),
                         Placeholder::make('invoice_status')
                             ->label('Invoice')
-                            ->content(fn (?Deal $record): string => $record?->invoice_number
-                                ? "Invoice generated: {$record->invoice_number}"
+                            ->content(fn (?Deal $record): string => ($latest = $record?->latestInvoice)
+                                ? "Invoice generated: {$latest->invoice_number}"
                                 : 'No invoice generated yet.'),
                     ]),
 
@@ -238,7 +238,7 @@ class DealResource extends Resource
                         default => (string) $state,
                     })
                     ->sortable(),
-                TextColumn::make('invoice_number')
+                TextColumn::make('latestInvoice.invoice_number')
                     ->label('Invoice')
                     ->placeholder('Not generated')
                     ->toggleable(),
