@@ -91,6 +91,11 @@ class CompanyInformation extends Page
                             ->minValue(0)
                             ->step('0.01')
                             ->prefix('Rs.'),
+                        TextInput::make('review_request_url')
+                            ->label('Review Request URL')
+                            ->url()
+                            ->maxLength(255)
+                            ->helperText('Example: your Facebook page review link.'),
                     ])
                     ->columns(2),
             ])

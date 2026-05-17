@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
     'city',
     'postal_code',
     'default_delivery_charges',
+    'review_request_url',
     'logo_path',
 ])]
 class CompanyInformation extends Model
@@ -27,6 +28,7 @@ class CompanyInformation extends Model
             [
                 'company_name' => config('app.name'),
                 'default_delivery_charges' => 0,
+                'review_request_url' => null,
             ],
         );
     }

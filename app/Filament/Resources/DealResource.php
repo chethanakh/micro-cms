@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Enums\DealStage;
+use App\Enums\DeliveryServiceProvider;
 use App\Filament\Resources\Deals\Pages;
 use App\Filament\Resources\Deals\RelationManagers\InvoicesRelationManager;
 use App\Models\CompanyInformation;
@@ -171,12 +172,16 @@ class DealResource extends Resource
                         Checkbox::make('delivery_charges_available')
                             ->label('Delivery charges available')
                             ->live()
-                            ->afterStateUpdated(function (Set $set, ?bool $state): void {
+                            ->afterStateUpdated(function (Set $set, Get $get, ?bool $state): void {
                                 if ($state) {
                                     $defaultCharges = CompanyInformation::current()->default_delivery_charges ?? 0;
                                     $set('delivery_charges', $defaultCharges);
+                                    if (blank($get('delivery_service_provider'))) {
+                                        $set('delivery_service_provider', DeliveryServiceProvider::FaderDomestic->value);
+                                    }
                                 } else {
                                     $set('delivery_charges', null);
+                                    $set('delivery_service_provider', null);
                                     $set('tracking_id', null);
                                 }
                             }),
@@ -187,10 +192,24 @@ class DealResource extends Resource
                             ->step('0.01')
                             ->prefix('Rs.')
                             ->visible(fn (Get $get) => (bool) $get('delivery_charges_available')),
+                        Select::make('delivery_service_provider')
+                            ->label('Delivery Service Provider')
+                            ->options(DeliveryServiceProvider::options())
+                            ->visible(fn (Get $get) => (bool) $get('delivery_charges_available')),
                         TextInput::make('tracking_id')
                             ->label('Tracking ID')
                             ->maxLength(255)
                             ->visible(fn (Get $get) => (bool) $get('delivery_charges_available')),
+                        Placeholder::make('tracking_public_url')
+                            ->label('Public Tracking URL')
+                            ->content(function (?Deal $record): string {
+                                if (! $record?->tracking_slug) {
+                                    return 'Save this deal to generate a public tracking URL.';
+                                }
+
+                                return route('tracking.public', ['slug' => $record->tracking_slug]);
+                            })
+                            ->columnSpanFull(),
                     ])
                     ->columns(2),
             ]);

@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use App\Enums\DealStage;
+use App\Enums\DeliveryServiceProvider;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
-#[Fillable(['contact_id', 'stage', 'invoice_number', 'invoice_generated_at', 'delivery_charges_available', 'delivery_charges', 'tracking_id'])]
+#[Fillable(['contact_id', 'stage', 'invoice_number', 'invoice_generated_at', 'delivery_charges_available', 'delivery_charges', 'delivery_service_provider', 'tracking_id', 'tracking_slug'])]
 class Deal extends Model
 {
     /**
@@ -18,11 +20,26 @@ class Deal extends Model
     {
         return [
             'invoice_generated_at' => 'datetime',
+            'delivery_charges_available' => 'boolean',
+            'delivery_charges' => 'decimal:2',
+            'delivery_service_provider' => DeliveryServiceProvider::class,
         ];
     }
 
     protected static function booted(): void
     {
+        static::creating(function (self $deal): void {
+            if (blank($deal->tracking_slug)) {
+                $deal->tracking_slug = (string) Str::ulid();
+            }
+        });
+
+        static::saving(function (self $deal): void {
+            if (blank($deal->tracking_slug)) {
+                $deal->tracking_slug = (string) Str::ulid();
+            }
+        });
+
         static::deleted(function (): void {
             Stock::syncSoldQuantities();
         });
