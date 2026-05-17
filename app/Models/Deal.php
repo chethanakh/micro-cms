@@ -49,6 +49,31 @@ class Deal extends Model
                 return;
             }
 
+            // Auto-generate invoice when moving from pending → preparing if none exists
+            if ($deal->stage === DealStage::Preparing->value && $deal->getOriginal('stage') === DealStage::Pending->value) {
+                if (! $deal->invoices()->exists()) {
+                    $deal->loadMissing('lineItems.product');
+
+                    $lineItems = $deal->lineItems->map(fn ($item): array => [
+                        'product_name' => $item->product?->name ?? 'Unknown Product',
+                        'quantity' => $item->quantity,
+                        'unit_price' => (float) $item->unit_price,
+                    ])->values()->all();
+
+                    $deliveryCharges = $deal->delivery_charges_available ? ($deal->delivery_charges ?? 0) : 0;
+
+                    Invoice::create([
+                        'deal_id' => $deal->id,
+                        'invoice_number' => 'INV-'.str_pad((string) $deal->id, 5, '0', STR_PAD_LEFT).'-'.now()->format('YmdHis'),
+                        'status' => DealStage::Preparing->invoiceStatus(),
+                        'line_items' => $lineItems,
+                        'delivery_charges' => $deliveryCharges,
+                    ]);
+
+                    return;
+                }
+            }
+
             $deal->syncLatestInvoiceStatus();
         });
     }
